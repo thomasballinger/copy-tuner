@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head> </head>
+<body>
+<audio controls="controls">
+	<source src="jacket.mp3" type="audio/mp3">
+	Your browser does not support the audio tag.
+</audio>
+<canvas id="canvas" width=400 height=400></canvas>
+<script>
+
+
+	var Tuner = {
+		window.AudioContext = window.webkitAudioContext;
+		if (!window.AudioContext){
+			alert("Sorry, not supported!");
+		}
+		navigator.getUserMedia = navigator.webkitGetUserMedia;
+		if (!navigator.getUserMedia){
+			alert("Sorry, not supported!");
+		}
+
+		var canvas = document.getElementsByTagName('canvas')[0];
+		var context = canvas.getContext('2d');
+		var audioContext = new AudioContext();
+		var sampleRate = audioContext.sampleRate;
+		var fftSize = 8192 // see phenomnomnominal.github.com/docs/tuner.html
+		var fft = new FFT(fftSize, sampleRate / 4);
+
+		var buffer = [];
+		for (var i = 0; i<fftSize; i++){
+			buffer.push(0);
+		}
+		var bufferFillSize = 2048;
+		var bufferFiller = audioContext.createJavaScriptNode(bufferFillSize, 1, 1)
+		bufferFiller.onaudioprocess = function(e) {
+			var input = e.inputBuffer.getChannelData(0);
+			for (var i = bufferFillSize; i<buffer.length; i++){
+				buffer[i - bufferFillSize] = buffer[i];
+			}
+			for (var i = 0; i<input.length; i++){
+				buffer[buffer.length - bufferFillSize + i] = input[i];
+			}
+		}
+
+		gauss = new WindowFUnction(DSP.GAUSS)
+
+
+
+
+
+
+var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+
+</script>
+</body>
+</html>
