@@ -7,10 +7,10 @@
 	Your browser does not support the audio tag.
 </audio>
 <canvas id="canvas" width=400 height=400></canvas>
+<script type="text/javscript" src="/dsp/dsp.js"></script>
+
 <script>
-
-
-	var Tuner = {
+	var Tuner = function() {
 		window.AudioContext = window.webkitAudioContext;
 		if (!window.AudioContext){
 			alert("Sorry, not supported!");
@@ -43,7 +43,17 @@
 			}
 		}
 
-		gauss = new WindowFUnction(DSP.GAUSS)
+		gauss = new WindowFunction(DSP.GAUSS);
+        lp = audioContext.createBiquadFilter();
+        lp.type = lp.LOWPASS;
+        lp.frequency = 8000;
+        lp.Q = .1;
+        hp = audioContext.createBiquadFilter();
+        hp.type = hp.HIGHPASS;
+        hp.frequency = 20;
+        hp.Q = .1;
+        success = function(stream){
+    }
 
 
 
