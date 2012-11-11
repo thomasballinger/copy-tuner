@@ -56,15 +56,15 @@ Tuner = ->
 
   gauss = new WindowFunction(DSP.GAUSS)
 
-  lp = audioContext.createBiquadFilter()
-  lp.type = lp.LOWPASS
-  lp.frequency = 8000
-  lp.Q = 0.1
+  window.lp = audioContext.createBiquadFilter()
+  window.lp.type = window.lp.LOWPASS
+  window.lp.frequency = 10000
+  window.lp.Q = 0.1
 
-  hp = audioContext.createBiquadFilter()
-  hp.type = hp.HIGHPASS
-  hp.frequency = 20
-  hp.Q = 0.1
+  window.hp = audioContext.createBiquadFilter()
+  window.hp.type = window.hp.HIGHPASS
+  window.hp.frequency = 100
+  window.hp.Q = 0.1
 
   success = (stream) ->
     maxTime = 0
@@ -75,9 +75,9 @@ Tuner = ->
     
     try
       src = audioContext.createMediaStreamSource stream
-      src.connect lp
-      lp.connect hp
-      hp.connect bufferFiller
+      src.connect window.lp
+      window.lp.connect window.hp
+      window.hp.connect bufferFiller
       bufferFiller.connect audioContext.destination
 
       process = ->
