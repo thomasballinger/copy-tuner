@@ -12,7 +12,15 @@ frequencies =
   'G1': 48.9994, 'G2': 97.9989, 'G3': 195.998, 'G4': 391.995, 'G5': 783.991, 'G6': 1567.98, 'G7': 3135.96
   'G#1': 51.9131, 'G#': 103.826, 'G#3': 207.652, 'G#4': 415.305, 'G#5': 830.609, 'G#6': 1661.22, 'G#7': 3322.44
 
-Tuner = ->
+looped_frequencies = {'A':0, 'A#':1, 'B':2, 'C':3, 'C#':4, 'D':5, 'D#':6, 'E':7, 'F':8, 'F#':9, 'G':10, 'G#':11}
+
+Tuner = (onUpdate, noiseThresholdMultiplier = .3) ->
+  window.currentNote = null
+  currentDiff = null
+  currentLoopedNote = null
+  currentNum = null
+  currentFrequency = null
+  currentLogFrequency = null
   window.AudioContext = (->
     window.AudioContext or
     window.mozAudioContext or
@@ -56,15 +64,15 @@ Tuner = ->
 
   gauss = new WindowFunction(DSP.GAUSS)
 
-  window.lp = audioContext.createBiquadFilter()
-  window.lp.type = window.lp.LOWPASS
-  window.lp.frequency = 10000
-  window.lp.Q = 0.1
+  lp = audioContext.createBiquadFilter()
+  lp.type = lp.LOWPASS
+  lp.frequency = 8000
+  lp.Q = 0.1
 
-  window.hp = audioContext.createBiquadFilter()
-  window.hp.type = window.hp.HIGHPASS
-  window.hp.frequency = 100
-  window.hp.Q = 0.1
+  hp = audioContext.createBiquadFilter()
+  hp.type = hp.HIGHPASS
+  hp.frequency = 20
+  hp.Q = 0.1
 
   success = (stream) ->
     maxTime = 0
@@ -75,9 +83,9 @@ Tuner = ->
     
     try
       src = audioContext.createMediaStreamSource stream
-      src.connect window.lp
-      window.lp.connect window.hp
-      window.hp.connect bufferFiller
+      src.connect lp
+      lp.connect hp
+      hp.connect bufferFiller
       bufferFiller.connect audioContext.destination
 
       process = ->
@@ -99,8 +107,8 @@ Tuner = ->
         fft.forward upsampled
     
         if noiseCount < 10
-          noiseThreshold = _.reduce(fft.spectrum, 
-            ((max, next) -> 
+          noiseThreshold = _.reduce(fft.spectrum,
+            ((max, next) ->
               if next > max then next else max)
             , noiseThreshold)
           noiseThrehold = if noiseThreshold > 0.001 then 0.001 else noiseThreshold
@@ -111,7 +119,7 @@ Tuner = ->
     
         peaks = []
         for p in [0...8]
-          if spectrumPoints[p].y > noiseThreshold * 5
+          if spectrumPoints[p].y > noiseThreshold * noiseThresholdMultiplier
             peaks.push spectrumPoints[p]
         
         if peaks.length > 0
@@ -149,12 +157,13 @@ Tuner = ->
         
             interp = (0.5 * ((left.y - right.y) / (left.y - (2 * peak.y) + right.y)) + peak.x)
             freq = interp * (sampleRate / fftSize)
-            window.frequency = freq
-            window.logfrequency = Math.log(freq)
+            currentFrequency = freq
+            currentLogFrequency = Math.log(freq)
             console.log window.frequency, window.logfrequency
-            [note, diff] = getPitch freq
+            [currentNote, currentDiff, currentLoopedNote, currentNum] = getPitch freq
+            console.log currentNote, currentDiff, currentLoopedNote, currentNum
             
-            display.draw note, diff
+            display.draw currentNote, currentDiff
         else
           maxPeaks = 0
           maxPeakCount++
@@ -162,20 +171,31 @@ Tuner = ->
             display.clear()
         
         render()
+        onUpdate
+          currentDiff : currentDiff
+          loopednote : currentLoopedNote
+          Num : currentNum
+          Frequency : currentFrequency
+          LogFrequency : currentLogFrequency
     catch e
       error e
 
     getPitch = (freq) ->
       minDiff = Infinity
       diff = Infinity
+      loopedNote = null
+      num = null
+      note = null
       for own key, val of frequencies
         if Math.abs(freq - val) < minDiff
           minDiff = Math.abs(freq - val)
           diff = freq - val
           note = key
-      [note, diff]
+          loopedNote = key.substring(0, key.length - 1)
+          num = looped_frequencies[loopedNote]
+      [note, diff, loopedNote, num]
 
-    display = 
+    display =
       draw: (note, diff) ->
         displayDiv = $('.tuner div')
         displayDiv.removeClass()
@@ -206,7 +226,7 @@ Tuner = ->
 
     setInterval process, 100
 
-  error = (e) -> 
+  error = (e) ->
     console.log e
     console.log 'ARE YOU USING CHROME CANARY (23/09/2012) ON A MAC WITH "Web Audio Input" ENABLED IN chrome://flags?'
     alert 'ERROR: CHECK ERROR CONSOLE'
