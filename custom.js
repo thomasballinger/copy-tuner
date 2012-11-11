@@ -174,7 +174,7 @@ var Tuner = function() {
 					}
 				}
 			}
-			render();
+			//render();
 		}
 
 		var getPitch = function(freq){
